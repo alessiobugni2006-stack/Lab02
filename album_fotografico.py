@@ -1,25 +1,83 @@
+
+import csv
 def carica_da_file(file_path):
+    from csv import reader
+    diz_per_anno={} #creo il dizionario
+    try :
+        file_csv = open(file_path, "r")
+        lettura_csv = reader(file_csv)
+        next(lettura_csv)  #salto la prima riga , che non serve
+        for row in lettura_csv:#prendo ogni pezzo della riga e lo divido
+            codice=row[0]
+            fotografia = row[1]
+            fotografo = row[2]
+            mese = row[3]
+            anno = row[4]
+            if anno not in diz_per_anno:#creo la chiave che corrisponde all'anno
+                diz_per_anno[anno] = []  # creo lista vuota la prima volta
+
+            diz_per_anno[anno].append((codice,fotografia, fotografo, mese))#in base all'anno ci aggiungo le informazioni
+    except FileNotFoundError:
+            return None
+    return diz_per_anno
     """Carica le foto dal file, creando un nuovo anno ogni volta che compare per la prima volta"""
-    # TODO
 
 
 def aggiungi_foto(album, codice, titolo, autore, mese, anno, file_path):
+    from csv import writer
+    if not 1 <= mese <= 12:
+        return None
+
+    for lista in album.values():#se il codice è gia associato ad una foto non va bene
+        for c, t, a, m in lista:
+            if c == codice:
+                return None
+
+    if anno not in album:#se non ho una chiave con quell'anno la creo
+        album[anno] = []
+
+    foto = (codice, titolo, autore, mese)
+    album[anno].append(foto)#carico la foto nel dizionario al corrispondete anno
+
+    try:
+        file_csv = open(file_path, "a", newline="")#scrivo la nuova riga nel file , "a" serve per aggiungere sennò lo spiana
+        scrittura_csv = writer(file_csv)
+        scrittura_csv.writerow([codice, titolo, autore, mese, anno])
+        file_csv.close()
+    except FileNotFoundError:
+        # se da errore rimuovo la riga
+        album[anno].remove(foto)
+        return None
+
+    return foto
+
     """Aggiunge una foto all'album, creando l'anno al volo se non è ancora presente"""
-    # TODO
 
 
 def cerca_foto(album, codice):
+    for anno, lista in album.items():
+        for c, t, a, m in lista:
+            if c == codice:
+                return f"{c},{t}, {a}, {m}, {anno}"
+    return None
+
     """Cerca una foto nell'album dato il codice"""
     # TODO
 
 
 def elenco_foto_anno_per_titolo(album, anno):
+    if anno not in album:#se l'anno non c'e non va bene
+        return None
+    lista_titoli = []
+    for c, t, a, m in album[anno]:
+        lista_titoli.append(t)#inserisco i titoli nella lista
+    return sorted(lista_titoli)#sordino la lista
+
     """Ordina i titoli delle foto di un dato anno in ordine alfabetico"""
-    # TODO
 
 
 def main():
-    album = []
+    album = {}
     file_path = "album_fotografico.csv"
 
     while True:
@@ -56,6 +114,13 @@ def main():
 
             foto = aggiungi_foto(album, codice, titolo, autore, mese, anno, file_path)
             if foto:
+                print("la struttura dati aggiornata è:")
+                print(album)
+                for chiave_anno in album:
+                    print(chiave_anno, ":")
+                    for codice, titolo, autore, mese in album[chiave_anno]:
+                        print(codice, titolo, autore, mese)
+
                 print(f"Foto aggiunta con successo!")
             else:
                 print("Non è stato possibile aggiungere la foto.")
@@ -78,7 +143,7 @@ def main():
                 continue
 
             try:
-                anno = int(input("Inserisci l'anno da consultare: ").strip())
+                anno = input("Inserisci l'anno da consultare: ").strip()
             except ValueError:
                 print("Errore: inserire un valore numerico valido.")
                 continue
